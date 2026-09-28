@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>중국어 파닉스 & 성조 학습 평가</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & Noto Sans KR / SC -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Noto+Sans+KR:wght@500;700;900&family=Noto+Sans+SC:wght@700;900&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti for Quiz Victory -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans KR', 'Noto Sans SC', 'sans-serif'],
+                    },
+                    colors: {
+                        bgSky: '#dcebf7',
+                        speakerYellow: '#ffba00',
+                        syllableTeal: '#377d73',
+                        initialCoral: '#f2a196',
+                        finalMint: '#73c3b0',
+                        toneSky: '#6db0f0'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #dcebf7;
+            font-family: 'Inter', 'Noto Sans KR', 'Noto Sans SC', sans-serif;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .card-container {
+            background-color: #ffffff;
+            border-radius: 28px;
+            box-shadow: 0 12px 35px rgba(50, 90, 130, 0.12);
+        }
+
+        .btn-speaker-yellow {
+            background: linear-gradient(180deg, #ffc72c 0%, #ffb300 100%);
+            box-shadow: 0 6px 0 #d99b00, 0 10px 15px rgba(255, 186, 0, 0.35);
+            transition: all 0.12s ease;
+        }
+        .btn-speaker-yellow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 0 #d99b00, 0 14px 20px rgba(255, 186, 0, 0.4);
+        }
+        .btn-speaker-yellow:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #d99b00, 0 4px 8px rgba(255, 186, 0, 0.2);
+        }
+
+        .syllable-badge {
+            background-color: #377d73;
+            color: #ffffff;
+            transition: all 0.2s ease;
+        }
+        .syllable-badge.active {
+            background-color: #1d4842;
+            box-shadow: 0 0 0 3px #9ee2d6, 0 4px 10px rgba(29, 72, 66, 0.3);
+            transform: scale(1.05);
+        }
+
+        .btn-filter {
+            transition: all 0.15s ease;
+        }
+        .btn-filter.active {
+            background-color: #0f766e;
+            color: #ffffff;
+            font-weight: 800;
+        }
+
+        /* 성모 Pill Button */
+        .btn-initial {
+            background-color: #f2a196;
+            color: #2b0d09;
+            font-weight: 800;
+            transition: all 0.15s ease;
+            box-shadow: 0 2px 4px rgba(242, 161, 150, 0.4);
+        }
+        .btn-initial:hover {
+            background-color: #e88d81;
+            transform: translateY(-1px);
+        }
+        .btn-initial.selected {
+            background-color: #d95c4d !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 0 3px #f2a196, 0 4px 10px rgba(217, 92, 77, 0.4);
+            transform: scale(1.08);
+            z-index: 10;
+        }
+
+        /* 운모 Pill Button */
+        .btn-final {
+            background-color: #73c3b0;
+            color: #062b23;
+            font-weight: 800;
+            transition: all 0.15s ease;
+            box-shadow: 0 2px 4px rgba(115, 195, 176, 0.4);
+        }
+        .btn-final:hover {
+            background-color: #5fb5a1;
+            transform: translateY(-1px);
+        }
+        .btn-final.selected {
+            background-color: #278873 !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 0 3px #73c3b0, 0 4px 10px rgba(39, 136, 115, 0.4);
+            transform: scale(1.08);
+            z-index: 10;
+        }
+
+        /* 성조 Pill Button */
+        .btn-tone {
+            background-color: #6db0f0;
+            color: #072340;
+            font-weight: 800;
+            transition: all 0.15s ease;
+            box-shadow: 0 2px 4px rgba(109, 176, 240, 0.4);
+        }
+        .btn-tone:hover {
+            background-color: #559ee5;
+            transform: translateY(-1px);
+        }
+        .btn-tone.selected {
+            background-color: #206bbd !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 0 3px #6db0f0, 0 4px 10px rgba(32, 107, 189, 0.4);
+            transform: scale(1.08);
+            z-index: 10;
+        }
+
+        @keyframes audio-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 186, 0, 0.7); }
+            70% { box-shadow: 0 0 0 18px rgba(255, 186, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 186, 0, 0); }
+        }
+        .audio-playing {
+            animation: audio-pulse 0.8s infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-3 sm:p-6 text-slate-800">
+
+    <div class="card-container w-full max-w-4xl p-5 sm:p-8 flex flex-col items-center relative">
+
+        <!-- TOP BAR: MODE SWITCH, TTS VOICE SELECTOR, SPEED & SCORE -->
+        <div class="w-full flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
+            <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <button id="mode-quiz-btn" onclick="switchMode('quiz')" class="px-3 py-1.5 rounded-xl font-bold text-xs sm:text-sm bg-teal-700 text-white shadow-sm transition">
+                    🎯 듣기 평가 퀴즈
+                </button>
+                <button id="mode-study-btn" onclick="switchMode('study')" class="px-3 py-1.5 rounded-xl font-bold text-xs sm:text-sm bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+                    📖 단어 분석 & 연습
+                </button>
+                <button id="mode-teacher-btn" onclick="switchMode('teacher')" class="px-3 py-1.5 rounded-xl font-bold text-xs sm:text-sm bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 transition">
+                    ⚙️ 교사 단어/음성 등록
+                </button>
+            </div>
+
+            <div class="flex items-center gap-2.5 flex-wrap">
+                <div class="flex items-center gap-1 bg-slate-50 border border-slate-200 px-2 py-1 rounded-lg text-xs">
+                    <span class="text-slate-500 font-bold hidden sm:inline">🗣️ 음성:</span>
+                    <select id="voice-select" onchange="onVoiceChanged()" class="bg-transparent font-bold text-slate-700 outline-none cursor-pointer max-w-[120px] sm:max-w-[160px] truncate">
+                        <option value="">중국어 보통화(Mandarin)</option>
+                    </select>
+                </div>
+
+                <button onclick="toggleAudioSpeed()" id="speed-toggle-btn" class="bg-sky-50 text-sky-800 border border-sky-200 font-bold px-2.5 py-1 rounded-lg text-xs hover:bg-sky-100">
+                    ⚡ <strong id="speed-val">1.0x</strong>
+                </button>
+
+                <div id="quiz-score-badge" class="bg-amber-50 text-amber-900 border border-amber-300 px-3 py-1 rounded-lg text-xs font-black flex items-center gap-1">
+                    <span>점수:</span>
+                    <span id="score-count" class="text-amber-600 font-extrabold text-sm">0</span>
+                    <span>/</span>
+                    <span id="total-count" class="text-slate-500 font-bold">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SYLLABLE COUNT FILTER BAR -->
+        <div id="syllable-filter-bar" class="w-full flex items-center justify-between gap-2 mb-4 bg-slate-50 p-2 rounded-2xl border border-slate-200">
+            <span class="text-xs font-bold text-slate-600 whitespace-nowrap pl-1">📌 음절 선택:</span>
+            <div class="flex items-center gap-1 sm:gap-2 flex-wrap">
+                <button onclick="setSyllableFilter(0)" id="filter-btn-0" class="btn-filter active px-2.5 py-1 rounded-xl text-xs font-bold bg-white text-slate-600 hover:bg-slate-100 border border-slate-200">
+                    전체
+                </button>
+                <button onclick="setSyllableFilter(1)" id="filter-btn-1" class="btn-filter px-2.5 py-1 rounded-xl text-xs font-bold bg-white text-slate-600 hover:bg-slate-100 border border-slate-200">
+                    1음절
+                </button>
+                <button onclick="setSyllableFilter(2)" id="filter-btn-2" class="btn-filter px-2.5 py-1 rounded-xl text-xs font-bold bg-white text-slate-600 hover:bg-slate-100 border border-slate-200">
+                    2음절
+                </button>
+                <button onclick="setSyllableFilter(3)" id="filter-btn-3" class="btn-filter px-2.5 py-1 rounded-xl text-xs font-bold bg-white text-slate-600 hover:bg-slate-100 border border-slate-200">
+                    3음절
+                </button>
+                <button onclick="setSyllableFilter(4)" id="filter-btn-4" class="btn-filter px-2.5 py-1 rounded-xl text-xs font-bold bg-white text-slate-600 hover:bg-slate-100 border border-slate-200">
+                    4음절
+                </button>
+            </div>
+        </div>
+
+        <!-- MAIN LEARNING & QUIZ VIEW -->
+        <div id="main-learning-view" class="w-full flex flex-col items-center">
+            <!-- MAIN SPEAKER BUTTON -->
+            <div class="my-2 flex flex-col items-center">
+                <button id="main-speaker-btn" onclick="playCurrentTargetAudio()" title="전체 단어 발음 듣기" 
+                    class="btn-speaker-yellow w-20 h-20 sm:w-24 sm:h-24 rounded-3xl flex items-center justify-center text-4xl sm:text-5xl text-slate-900 cursor-pointer active:scale-95">
+                    🔊
+                </button>
+            </div>
+
+            <h2 class="text-base sm:text-lg font-bold text-slate-800 mt-3 mb-2 text-center">
+                각 음절의 성모 → 운모 → 성조를 선택하세요.
+            </h2>
+
+            <!-- WORD DISPLAY & PREVIEW -->
+            <div class="flex flex-col items-center justify-center mb-3 min-h-[68px]">
+                <div id="target-word-display" class="text-3xl sm:text-4xl font-black text-slate-800 tracking-widest my-0.5">
+                    ?
+                </div>
+
+                <div class="flex items-center gap-2 mt-1">
+                    <div class="flex items-center gap-2 text-base sm:text-lg font-extrabold text-teal-800 bg-teal-50 px-4 py-1.5 rounded-full border border-teal-200 shadow-inner">
+                        <span class="text-xs font-bold text-teal-600">조합된 병음:</span>
+                        <span id="pinyin-assembly-text" class="tracking-wider text-amber-600 font-black">---</span>
+                    </div>
+                    <button onclick="playActiveSyllableAudio()" title="선택된 음절 소리 들어보기" 
+                        class="bg-amber-500 hover:bg-amber-400 text-slate-900 font-extrabold px-3.5 py-1.5 rounded-full text-xs sm:text-sm border border-amber-600 shadow-sm active:scale-95 transition flex items-center gap-1">
+                        🔊 음절 듣기
+                    </button>
+                </div>
+            </div>
+
+            <!-- SYLLABLE BADGES -->
+            <div id="syllables-selector-container" class="flex flex-wrap items-center justify-center gap-2 mb-5"></div>
+
+            <!-- SECTION ① 성모 -->
+            <div class="w-full mb-5">
+                <div class="text-center font-bold text-slate-700 text-sm sm:text-base mb-2 flex items-center justify-center gap-1">
+                    <span>① 성모 (声母)</span>
+                </div>
+
+                <div class="flex flex-col items-center gap-2">
+                    <div id="initials-row-1" class="flex flex-wrap justify-center gap-1.5 sm:gap-2"></div>
+                    <div id="initials-row-2" class="flex flex-wrap justify-center gap-1.5 sm:gap-2"></div>
+                </div>
+            </div>
+
+            <!-- SECTION ② 운모 -->
+            <div class="w-full mb-5">
+                <div class="text-center font-bold text-slate-700 text-sm sm:text-base mb-2 flex items-center justify-center gap-1">
+                    <span>② 운모 (韵母)</span>
+                </div>
+
+                <div class="flex flex-col items-center gap-2">
+                    <div id="finals-row-1" class="flex flex-wrap justify-center gap-1.5 sm:gap-2"></div>
+                    <div id="finals-row-2" class="flex flex-wrap justify-center gap-1.5 sm:gap-2"></div>
+                </div>
+            </div>
+
+            <!-- SECTION ③ 성조 -->
+            <div class="w-full mb-5">
+                <div class="text-center font-bold text-slate-700 text-sm sm:text-base mb-2 flex items-center justify-center gap-1">
+                    <span>③ 성조 (声调)</span>
+                </div>
+
+                <div id="tones-row" class="flex flex-wrap justify-center gap-2 sm:gap-3"></div>
+            </div>
+        </div>
+
+        <!-- TEACHER CONTROL PANEL -->
+        <div id="teacher-control-view" class="w-full hidden flex flex-col gap-6 py-2">
+            <div class="bg-indigo-50/70 border border-indigo-200 p-5 rounded-2xl">
+                <h3 class="text-base sm:text-lg font-black text-indigo-950 mb-1 flex items-center gap-2">
+                    <span>📝 교사 전용 단어 추가 및 음성 파일 등록</span>
+                </h3>
+                <p class="text-xs sm:text-sm text-indigo-700 mb-4">
+                    직접 새 단어와 성모·운모·성조 구성을 등록하세요. 1음절부터 4음절 단어까지 모두 자유롭게 등록 가능합니다.
+                </p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">단어 (중국어 한자)</label>
+                        <input type="text" id="teacher-input-word" placeholder="예: 冰淇淋" 
+                            class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl font-bold text-sm focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">단어 뜻 (한글)</label>
+                        <input type="text" id="teacher-input-meaning" placeholder="예: 아이스크림" 
+                            class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl font-bold text-sm focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">음절 수</label>
+                        <select id="teacher-syllable-count" onchange="renderTeacherSyllableForms()" 
+                            class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl font-bold text-sm focus:outline-none focus:border-indigo-500">
+                            <option value="1">1음절 단어</option>
+                            <option value="2" selected>2음절 단어</option>
+                            <option value="3">3음절 단어</option>
+                            <option value="4">4음절 단어</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-slate-700 mb-2">음절별 파닉스 구성 (성모 / 운모 / 성조)</label>
+                    <div id="teacher-syllables-container" class="flex flex-col gap-2.5"></div>
+                </div>
+
+                <div class="bg-white p-3.5 border border-indigo-100 rounded-xl mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-800">🎙️ 단어 발음 음성 파일 업로드 (선택 사항)</label>
+                        <p class="text-[11px] text-slate-500">업로드하지 않을 경우 브라우저 기본 중국어 보통화 TTS로 재생됩니다.</p>
+                    </div>
+                    <input type="file" id="teacher-audio-file" accept="audio/*" 
+                        class="text-xs text-slate-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-100 file:text-indigo-800 hover:file:bg-indigo-200 cursor-pointer">
+                </div>
+
+                <div class="flex justify-end">
+                    <button onclick="saveCustomWordFromTeacher()" 
+                        class="bg-indigo-600 hover:bg-indigo-500 text-white font-black px-6 py-2.5 rounded-xl shadow-md border-b-4 border-indigo-800 active:border-b-0 active:translate-y-1 transition text-sm">
+                        ➕ 새 단어 등록하기
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 border border-slate-200 p-4 rounded-2xl">
+                <div class="flex items-center justify-between mb-3">
+                    <h4 class="text-sm font-bold text-slate-800">📚 교사 등록 단어 목록 (<span id="custom-words-count">0</span>개)</h4>
+                    <button onclick="clearAllCustomWords()" class="text-xs text-red-500 hover:underline font-bold">등록 단어 전체 삭제</button>
+                </div>
+                <div id="custom-words-list" class="flex flex-col gap-2 max-h-60 overflow-y-auto pr-1"></div>
+            </div>
+        </div>
+
+        <!-- BOTTOM ACTION BAR -->
+        <div class="w-full border-t border-slate-100 pt-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div id="study-controls" class="hidden flex items-center gap-2 w-full sm:w-auto">
+                <span class="text-xs font-bold text-slate-500 whitespace-nowrap">단어 선택:</span>
+                <select id="word-preset-select" onchange="onSelectStudyWord(this.value)" 
+                    class="bg-slate-50 border-2 border-slate-200 text-slate-800 text-sm font-bold rounded-xl px-3 py-1.5 focus:outline-none focus:border-teal-500 w-full sm:w-auto">
+                </select>
+            </div>
+
+            <div id="quiz-feedback-box" class="text-center sm:text-left text-xs sm:text-sm font-bold min-h-[24px]">
+                <span class="text-slate-400">스피커 🔊를 누르고 성모, 운모, 성조를 조합해 보세요.</span>
+            </div>
+
+            <div id="action-buttons-container" class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <button id="btn-check-answer" onclick="checkQuizAnswer()" 
+                    class="flex-1 sm:flex-none bg-teal-600 hover:bg-teal-500 text-white font-black px-6 py-2.5 rounded-2xl shadow-md border-b-4 border-teal-800 active:border-b-0 active:translate-y-1 transition text-sm sm:text-base">
+                    정답 확인 ✨
+                </button>
+                <button id="btn-next-question" onclick="loadNextQuizQuestion()" 
+                    class="flex-1 sm:flex-none bg-amber-500 hover:bg-amber-400 text-slate-900 font-black px-5 py-2.5 rounded-2xl shadow-md border-b-4 border-amber-700 active:border-b-0 active:translate-y-1 transition text-sm sm:text-base">
+                    다음 문제 ➔
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const INITIALS_LIST = ['b', 'p', 'm', 'f', 'd', 't', 'n', 'l', 'g', 'k', 'h', 'z', 'c', 's', 'zh', 'ch', 'sh', 'r', 'j', 'q', 'x', 'y', 'w', 'ø'];
+        const FINALS_LIST = ['a', 'o', 'e', 'i', 'u', 'ü', 'ai', 'ei', 'ao', 'ou', 'ia', 'ie', 'ua', 'uo', 'üe', 'iao', 'iou', 'uai', 'uei', 'an', 'en', 'in', 'un', 'ün', 'ian', 'uan', 'üan', 'ang', 'eng', 'ing', 'ong', 'iang', 'uang', 'ueng', 'iong', 'er'];
+
+        const INITIALS_ROW_1 = ['b', 'p', 'm', 'f', 'd', 't', 'n', 'l', 'g', 'k', 'h', 'z', 'c', 's', 'zh', 'ch', 'sh', 'r'];
+        const INITIALS_ROW_2 = ['j', 'q', 'x', 'y', 'w', 'ø'];
+
+        const FINALS_ROW_1 = ['a', 'o', 'e', 'i', 'u', 'ü', 'ai', 'ei', 'ao', 'ou', 'ia', 'ie', 'ua', 'uo', 'üe', 'iao', 'iou', 'uai'];
+        const FINALS_ROW_2 = ['uei', 'an', 'en', 'in', 'un', 'ün', 'ian', 'uan', 'üan', 'ang', 'eng', 'ing', 'ong', 'iang', 'uang', 'ueng', 'iong', 'er'];
+
+        const TONES_LIST = [
+            { id: 1, label: '1성 ˉ', symbol: 'ˉ' },
+            { id: 2, label: '2성 ˊ', symbol: 'ˊ' },
+            { id: 3, label: '3성 ˇ', symbol: 'ˇ' },
+            { id: 4, label: '4성 ˋ', symbol: 'ˋ' },
+            { id: 0, label: '경성', symbol: '' }
+        ];
+
+        const TONE_MA_MAP = {
+            1: '妈', 2: '麻', 3: '马', 4: '骂', 0: '吗'
+        };
+
+        const INITIAL_HANZI_MAP = {
+            'b': '波', 'p': '坡', 'm': '摸', 'f': '佛', 'd': '得', 't': '特', 'n': '呐', 'l': '勒',
+            'g': '哥', 'k': '科', 'h': '喝', 'z': '资', 'c': '次', 's': '思', 'zh': '知', 'ch': '吃',
+            'sh': '诗', 'r': '日', 'j': '基', 'q': '七', 'x': '西', 'y': '衣', 'w': '乌', 'ø': ''
+        };
+
+        const FINAL_HANZI_MAP = {
+            'a': '啊', 'o': '喔', 'e': '鹅', 'i': '衣', 'u': '乌', 'ü': '迂', 'ai': '哀', 'ei': '诶',
+            'ao': '熬', 'ou': '欧', 'ia': '呀', 'ie': '耶', 'ua': '蛙', 'uo': '窝', 'üe': '约',
+            'iao': '腰', 'iou': '优', 'uai': '歪', 'uei': '微', 'an': '安', 'en': '恩', 'in': '因',
+            'un': '温', 'ün': '晕', 'ian': '烟', 'uan': '弯', 'üan': '冤', 'ang': '昂', 'eng': '亨',
+            'ing': '英', 'ong': '翁', 'iang': '央', 'uang': '汪', 'ueng': '翁', 'iong': '雍', 'er': '二'
+        };
+
+        const PINYIN_HANZI_LOOKUP = {
+            "nǐ": "你", "hǎo": "好", "píng": "苹", "guǒ": "果", "xiè": "谢", "xie": "谢",
+            "niú": "牛", "nǎi": "奶", "lǎo": "老", "shī": "师", "zhōng": "中", "guó": "国",
+            "māo": "猫", "gǒu": "狗", "kuài": "快", "lè": "乐", "yī": "医", "shēng": "生",
+            "bīng": "冰", "qí": "淇", "lín": "淋", "mài": "麦", "dāng": "当", "láo": "劳",
+            "qiǎo": "巧", "kè": "克", "lì": "力", "zhào": "照", "xiàng": "相", "jī": "机",
+            "xīn": "新", "nián": "年", "zì": "自", "yóu": "由", "zài": "在", "hàn": "汉",
+            "yǔ": "语", "shuǐ": "水", "miàn": "面", "bāo": "包", "xué": "学", "bā": "八",
+            "bá": "拔", "bǎ": "把", "bà": "爸", "mā": "妈", "má": "麻", "mǎ": "马", "mà": "骂", "ma": "吗"
+        };
+
+        const BASE_VOCABULARY_DB = [
+            // 1음절
+            { word: "猫", meaning: "고양이", syllables: [{ initial: "m", final: "ao", tone: 1, pinyin: "māo", hanzi: "猫" }] },
+            { word: "狗", meaning: "개", syllables: [{ initial: "g", final: "ou", tone: 3, pinyin: "gǒu", hanzi: "狗" }] },
+            { word: "水", meaning: "물", syllables: [{ initial: "sh", final: "uei", tone: 3, pinyin: "shuǐ", hanzi: "水" }] },
+            
+            // 2음절
+            { word: "你好", meaning: "안녕하세요", syllables: [{ initial: "n", final: "i", tone: 3, pinyin: "nǐ", hanzi: "你" }, { initial: "h", final: "ao", tone: 3, pinyin: "hǎo", hanzi: "好" }] },
+            { word: "苹果", meaning: "사과", syllables: [{ initial: "p", final: "ing", tone: 2, pinyin: "píng", hanzi: "苹" }, { initial: "g", final: "uo", tone: 3, pinyin: "guǒ", hanzi: "果" }] },
+            { word: "谢谢", meaning: "감사합니다", syllables: [{ initial: "x", final: "ie", tone: 4, pinyin: "xiè", hanzi: "谢" }, { initial: "x", final: "ie", tone: 0, pinyin: "xie", hanzi: "谢" }] },
+            { word: "牛奶", meaning: "우유", syllables: [{ initial: "n", final: "iou", tone: 2, pinyin: "niú", hanzi: "牛" }, { initial: "n", final: "ai", tone: 3, pinyin: "nǎi", hanzi: "奶" }] },
+            { word: "老师", meaning: "선생님", syllables: [{ initial: "l", final: "ao", tone: 3, pinyin: "lǎo", hanzi: "老" }, { initial: "sh", final: "i", tone: 1, pinyin: "shī", hanzi: "师" }] },
+            { word: "中国", meaning: "중국", syllables: [{ initial: "zh", final: "ong", tone: 1, pinyin: "zhōng", hanzi: "中" }, { initial: "g", final: "uo", tone: 2, pinyin: "guó", hanzi: "国" }] },
+            { word: "快乐", meaning: "즐겁다", syllables: [{ initial: "k", final: "uai", tone: 4, pinyin: "kuài", hanzi: "快" }, { initial: "l", final: "e", tone: 4, pinyin: "lè", hanzi: "乐" }] },
+            { word: "医生", meaning: "의사", syllables: [{ initial: "y", final: "i", tone: 1, pinyin: "yī", hanzi: "医" }, { initial: "sh", final: "eng", tone: 1, pinyin: "shēng", hanzi: "生" }] },
+
+            // 3음절
+            { word: "冰淇淋", meaning: "아이스크림", syllables: [{ initial: "b", final: "ing", tone: 1, pinyin: "bīng", hanzi: "冰" }, { initial: "q", final: "i", tone: 2, pinyin: "qí", hanzi: "淇" }, { initial: "l", final: "in", tone: 2, pinyin: "lín", hanzi: "淋" }] },
+            { word: "麦当劳", meaning: "맥도날드", syllables: [{ initial: "m", final: "ai", tone: 4, pinyin: "mài", hanzi: "麦" }, { initial: "d", final: "ang", tone: 1, pinyin: "dāng", hanzi: "当" }, { initial: "l", final: "ao", tone: 2, pinyin: "láo", hanzi: "劳" }] },
+            { word: "巧克力", meaning: "초콜릿", syllables: [{ initial: "q", final: "iao", tone: 3, pinyin: "qiǎo", hanzi: "巧" }, { initial: "k", final: "e", tone: 4, pinyin: "kè", hanzi: "克" }, { initial: "l", final: "i", tone: 4, pinyin: "lì", hanzi: "力" }] },
+            { word: "照相机", meaning: "카메라", syllables: [{ initial: "zh", final: "ao", tone: 4, pinyin: "zhào", hanzi: "照" }, { initial: "x", final: "iang", tone: 4, pinyin: "xiàng", hanzi: "相" }, { initial: "j", final: "i", tone: 1, pinyin: "jī", hanzi: "机" }] },
+
+            // 4음절
+            { word: "新年快乐", meaning: "새해 복 많이 받으세요", syllables: [{ initial: "x", final: "in", tone: 1, pinyin: "xīn", hanzi: "新" }, { initial: "n", final: "ian", tone: 2, pinyin: "nián", hanzi: "年" }, { initial: "k", final: "uai", tone: 4, pinyin: "kuài", hanzi: "快" }, { initial: "l", final: "e", tone: 4, pinyin: "lè", hanzi: "乐" }] },
+            { word: "自由自在", meaning: "유유자적하다", syllables: [{ initial: "z", final: "i", tone: 4, pinyin: "zì", hanzi: "自" }, { initial: "y", final: "ou", tone: 2, pinyin: "yóu", hanzi: "由" }, { initial: "z", final: "i", tone: 4, pinyin: "zì", hanzi: "自" }, { initial: "z", final: "ai", tone: 4, pinyin: "zài", hanzi: "在" }] },
+            { word: "汉语水平", meaning: "중국어 실력", syllables: [{ initial: "h", final: "an", tone: 4, pinyin: "hàn", hanzi: "汉" }, { initial: "y", final: "u", tone: 3, pinyin: "yǔ", hanzi: "语" }, { initial: "sh", final: "uei", tone: 3, pinyin: "shuǐ", hanzi: "水" }, { initial: "p", final: "ing", tone: 2, pinyin: "píng", hanzi: "平" }] }
+        ];
+
+        let VOCABULARY_DB = [...BASE_VOCABULARY_DB];
+        let currentMode = 'quiz';
+        let currentTargetWord = VOCABULARY_DB[0];
+        let activeSyllableIndex = 0;
+        let userSelections = [];
+        let selectedSyllableFilter = 0; // 0: 전체, 1~4: 해당 음절
+
+        let quizScore = 0;
+        let quizTotal = 0;
+        let audioSpeed = 1.0;
+        let availableVoices = [];
+        let selectedVoiceIndex = 0;
+
+        const TONE_MARKS = {
+            'a': ['a', 'ā', 'á', 'ǎ', 'à'],
+            'o': ['o', 'ō', 'ó', 'ǒ', 'ò'],
+            'e': ['e', 'ē', 'é', 'ě', 'è'],
+            'i': ['i', 'ī', 'í', 'ǐ', 'ì'],
+            'u': ['u', 'ū', 'ú', 'ǔ', 'ù'],
+            'ü': ['ü', 'ǖ', 'ǘ', 'ǚ', 'ǜ']
+        };
+
+        function getFilteredVocabulary() {
+            if (selectedSyllableFilter === 0) return VOCABULARY_DB;
+            const filtered = VOCABULARY_DB.filter(v => v.syllables.length === selectedSyllableFilter);
+            return filtered.length > 0 ? filtered : VOCABULARY_DB;
+        }
+
+        function setSyllableFilter(count) {
+            selectedSyllableFilter = count;
+            for (let i = 0; i <= 4; i++) {
+                const btn = document.getElementById(`filter-btn-${i}`);
+                if (btn) {
+                    if (i === count) {
+                        btn.className = "btn-filter active px-2.5 py-1 rounded-xl text-xs font-bold bg-teal-700 text-white shadow-sm";
+                    } else {
+                        btn.className = "btn-filter px-2.5 py-1 rounded-xl text-xs font-bold bg-white text-slate-600 hover:bg-slate-100 border border-slate-200";
+                    }
+                }
+            }
+
+            updateStudyPresetDropdown();
+
+            if (currentMode === 'quiz') {
+                loadNextQuizQuestion();
+            } else if (currentMode === 'study') {
+                onSelectStudyWord(0);
+            }
+        }
+
+        function renderAllButtons() {
+            const initRow1 = document.getElementById('initials-row-1');
+            initRow1.innerHTML = INITIALS_ROW_1.map(item => `
+                <button onclick="selectInitial('${item}')" data-initial="${item}" 
+                    class="btn-initial px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm border border-red-200 cursor-pointer active:scale-95">
+                    ${item}
+                </button>
+            `).join('');
+
+            const initRow2 = document.getElementById('initials-row-2');
+            initRow2.innerHTML = INITIALS_ROW_2.map(item => {
+                const label = item === 'ø' ? '없음' : item;
+                return `
+                <button onclick="selectInitial('${item}')" data-initial="${item}" 
+                    class="btn-initial px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-xs sm:text-sm border border-red-200 cursor-pointer active:scale-95">
+                    ${label}
+                </button>
+                `;
+            }).join('');
+
+            const finRow1 = document.getElementById('finals-row-1');
+            finRow1.innerHTML = FINALS_ROW_1.map(item => `
+                <button onclick="selectFinal('${item}')" data-final="${item}" 
+                    class="btn-final px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm border border-teal-200 cursor-pointer active:scale-95">
+                    ${item}
+                </button>
+            `).join('');
+
+            const finRow2 = document.getElementById('finals-row-2');
+            finRow2.innerHTML = FINALS_ROW_2.map(item => `
+                <button onclick="selectFinal('${item}')" data-final="${item}" 
+                    class="btn-final px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm border border-teal-200 cursor-pointer active:scale-95">
+                    ${item}
+                </button>
+            `).join('');
+
+            const toneRow = document.getElementById('tones-row');
+            toneRow.innerHTML = TONES_LIST.map(item => `
+                <button onclick="selectTone(${item.id})" data-tone="${item.id}" 
+                    class="btn-tone px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm border border-blue-200 cursor-pointer active:scale-95">
+                    ${item.label}
+                </button>
+            `).join('');
+
+            updateStudyPresetDropdown();
+        }
+
+        function updateStudyPresetDropdown() {
+            const selectElem = document.getElementById('word-preset-select');
+            const list = getFilteredVocabulary();
+            selectElem.innerHTML = list.map((v, idx) => `
+                <option value="${idx}">[${v.syllables.length}음절] ${v.word} (${v.syllables.map(s => s.pinyin).join(' ')}) - ${v.meaning}${v.isCustom ? ' [교사등록]' : ''}</option>
+            `).join('');
+        }
+
+        function combineToPinyin(initial, final, tone) {
+            if (!final) return (initial === 'ø' || !initial) ? '?' : initial;
+
+            let baseInit = (initial === 'ø' || !initial) ? '' : initial;
+            let rawFinal = final;
+
+            if (rawFinal === 'iou') rawFinal = 'iu';
+            if (rawFinal === 'uei') rawFinal = 'ui';
+            if (rawFinal === 'uen') rawFinal = 'un';
+
+            if (['j', 'q', 'x'].includes(baseInit)) {
+                if (rawFinal.startsWith('ü')) {
+                    rawFinal = rawFinal.replace('ü', 'u');
+                }
+            }
+
+            if (!baseInit) {
+                if (rawFinal === 'i') baseInit = 'y';
+                else if (rawFinal === 'u') baseInit = 'w';
+                else if (rawFinal === 'ü') { baseInit = 'y'; rawFinal = 'u'; }
+            }
+
+            if (tone === 0 || tone === null || tone === undefined) {
+                return baseInit + rawFinal;
+            }
+
+            let chars = rawFinal.split('');
+            let targetIdx = -1;
+
+            let aIdx = chars.indexOf('a');
+            let eIdx = chars.indexOf('e');
+            let oIdx = chars.indexOf('o');
+
+            if (aIdx !== -1) targetIdx = aIdx;
+            else if (eIdx !== -1) targetIdx = eIdx;
+            else if (oIdx !== -1 && rawFinal.includes('ou')) targetIdx = oIdx;
+            else {
+                for (let i = chars.length - 1; i >= 0; i--) {
+                    if (TONE_MARKS[chars[i]]) {
+                        targetIdx = i;
+                        break;
+                    }
+                }
+            }
+
+            if (targetIdx !== -1) {
+                let v = chars[targetIdx];
+                if (TONE_MARKS[v] && TONE_MARKS[v][tone]) {
+                    chars[targetIdx] = TONE_MARKS[v][tone];
+                }
+            }
+
+            return baseInit + chars.join('');
+        }
+
+        function updatePinyinPreview() {
+            const assembledParts = userSelections.map(sel => {
+                if (!sel.initial && !sel.final && sel.tone === null) return '___';
+                return combineToPinyin(sel.initial, sel.final, sel.tone);
+            });
+
+            document.getElementById('pinyin-assembly-text').innerText = assembledParts.join(' ');
+        }
+
+        function loadTTSVoices() {
+            if (!('speechSynthesis' in window)) return;
+            
+            const updateVoices = () => {
+                const voices = window.speechSynthesis.getVoices();
+                availableVoices = voices.filter(v => 
+                    v.lang.toLowerCase().includes('zh-cn') || 
+                    v.lang.toLowerCase().includes('zh') ||
+                    v.name.includes('Mandarin') ||
+                    v.name.includes('Chinese')
+                );
+                
+                const select = document.getElementById('voice-select');
+                if (availableVoices.length > 0) {
+                    select.innerHTML = availableVoices.map((v, i) => `
+                        <option value="${i}">${v.name.replace('Google', '').replace('Microsoft', '')}</option>
+                    `).join('');
+                } else {
+                    select.innerHTML = `<option value="">중국어 보통화(Mandarin)</option>`;
+                }
+            };
+
+            updateVoices();
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = updateVoices;
+            }
+        }
+
+        function onVoiceChanged() {
+            const select = document.getElementById('voice-select');
+            selectedVoiceIndex = parseInt(select.value) || 0;
+        }
+
+        function speakMandarin(textToSpeak, callback = null) {
+            if (!textToSpeak) { if (callback) callback(); return; }
+
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+
+                const utterance = new SpeechSynthesisUtterance(textToSpeak);
+                utterance.lang = 'zh-CN';
+                utterance.rate = 0.85 * audioSpeed;
+
+                if (availableVoices.length > 0 && availableVoices[selectedVoiceIndex]) {
+                    utterance.voice = availableVoices[selectedVoiceIndex];
+                }
+
+                utterance.onend = () => { if (callback) callback(); };
+                utterance.onerror = () => { if (callback) callback(); };
+
+                window.speechSynthesis.speak(utterance);
+            } else if (callback) {
+                callback();
+            }
+        }
+
+        function toggleAudioSpeed() {
+            audioSpeed = audioSpeed === 1.0 ? 0.7 : 1.0;
+            document.getElementById('speed-val').innerText = `${audioSpeed}x`;
+        }
+
+        function playCurrentTargetAudio() {
+            if (!currentTargetWord) return;
+
+            const btn = document.getElementById('main-speaker-btn');
+            btn.classList.add('audio-playing');
+
+            if (currentTargetWord.audioUrl) {
+                const audio = new Audio(currentTargetWord.audioUrl);
+                audio.playbackRate = audioSpeed;
+                audio.onended = () => btn.classList.remove('audio-playing');
+                audio.onerror = () => {
+                    speakMandarin(currentTargetWord.word, () => btn.classList.remove('audio-playing'));
+                };
+                audio.play().catch(() => {
+                    speakMandarin(currentTargetWord.word, () => btn.classList.remove('audio-playing'));
+                });
+            } else {
+                speakMandarin(currentTargetWord.word, () => {
+                    btn.classList.remove('audio-playing');
+                });
+            }
+        }
+
+        /* 개별 음절 듣기 음성 재생 함수 개선 */
+        function playActiveSyllableAudio() {
+            if (!currentTargetWord || !currentTargetWord.syllables) return;
+
+            const currentSyl = currentTargetWord.syllables[activeSyllableIndex];
+            if (!currentSyl) return;
+
+            // 1. 현재 음절의 한자 발음이 존재하는 경우 직접 표준 중국어로 발음
+            if (currentSyl.hanzi) {
+                speakMandarin(currentSyl.hanzi);
+                return;
+            }
+
+            // 2. 한자가 명시되지 않은 경우 사용자 선택 병음 또는 대상 병음 재생
+            const userSel = userSelections[activeSyllableIndex];
+            const combinedPinyin = combineToPinyin(userSel.initial, userSel.final, userSel.tone);
+            const lookupHanzi = PINYIN_HANZI_LOOKUP[combinedPinyin] || PINYIN_HANZI_LOOKUP[currentSyl.pinyin];
+
+            if (lookupHanzi) {
+                speakMandarin(lookupHanzi);
+            } else if (userSel.final) {
+                const fallbackHanzi = FINAL_HANZI_MAP[userSel.final] || '啊';
+                speakMandarin(fallbackHanzi);
+            } else if (currentSyl.pinyin) {
+                speakMandarin(currentSyl.pinyin);
+            }
+        }
+
+        function setActiveSyllable(index) {
+            activeSyllableIndex = index;
+            updateSyllableBadgesUI();
+            updateButtonSelectionsUI();
+            updatePinyinPreview();
+        }
+
+        function updateSyllableBadgesUI() {
+            const container = document.getElementById('syllables-selector-container');
+            if (!currentTargetWord || !currentTargetWord.syllables) return;
+
+            const total = currentTargetWord.syllables.length;
+
+            let html = '';
+            for (let i = 0; i < total; i++) {
+                const isActive = i === activeSyllableIndex;
+                const activeClass = isActive ? 'active font-black' : 'opacity-70 hover:opacity-100';
+                html += `
+                    <button onclick="setActiveSyllable(${i})" 
+                        class="syllable-badge ${activeClass} px-4 py-1.5 rounded-full text-xs sm:text-sm font-extrabold border border-teal-800 shadow-sm transition cursor-pointer">
+                        ${i + 1}음절
+                    </button>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        function selectInitial(initialVal) {
+            userSelections[activeSyllableIndex].initial = initialVal;
+            updateButtonSelectionsUI();
+            updatePinyinPreview();
+
+            const hanziToSpeak = INITIAL_HANZI_MAP[initialVal];
+            if (hanziToSpeak) {
+                speakMandarin(hanziToSpeak);
+            }
+        }
+
+        function selectFinal(finalVal) {
+            userSelections[activeSyllableIndex].final = finalVal;
+            updateButtonSelectionsUI();
+            updatePinyinPreview();
+
+            const hanziToSpeak = FINAL_HANZI_MAP[finalVal];
+            if (hanziToSpeak) {
+                speakMandarin(hanziToSpeak);
+            }
+        }
+
+        function selectTone(toneVal) {
+            userSelections[activeSyllableIndex].tone = toneVal;
+            updateButtonSelectionsUI();
+            updatePinyinPreview();
+
+            const maHanzi = TONE_MA_MAP[toneVal];
+            if (maHanzi) {
+                speakMandarin(maHanzi);
+            }
+        }
+
+        function updateButtonSelectionsUI() {
+            const currentSel = userSelections[activeSyllableIndex] || { initial: null, final: null, tone: null };
+
+            document.querySelectorAll('.btn-initial').forEach(btn => {
+                btn.classList.toggle('selected', btn.dataset.initial === currentSel.initial);
+            });
+
+            document.querySelectorAll('.btn-final').forEach(btn => {
+                btn.classList.toggle('selected', btn.dataset.final === currentSel.final);
+            });
+
+            document.querySelectorAll('.btn-tone').forEach(btn => {
+                btn.classList.toggle('selected', parseInt(btn.dataset.tone) === currentSel.tone);
+            });
+        }
+
+        function switchMode(mode) {
+            currentMode = mode;
+
+            const quizBtn = document.getElementById('mode-quiz-btn');
+            const studyBtn = document.getElementById('mode-study-btn');
+            const teacherBtn = document.getElementById('mode-teacher-btn');
+
+            const learningView = document.getElementById('main-learning-view');
+            const teacherView = document.getElementById('teacher-control-view');
+            const filterBar = document.getElementById('syllable-filter-bar');
+
+            const studyControls = document.getElementById('study-controls');
+            const actionButtons = document.getElementById('action-buttons-container');
+            const checkBtn = document.getElementById('btn-check-answer');
+
+            if (mode === 'quiz') {
+                quizBtn.className = "px-3 py-1.5 rounded-xl font-bold text-xs sm:text-sm bg-teal-700 text-white shadow-sm transition";
+                studyBtn.className = "px-3 py-1.5 rounded-xl font-bold text-xs sm:text-sm bg-slate-100 text-slate-600 hover:bg-slate-200 transition";
+                teacherBtn.className = "px-3 py-1.5 rounded-xl font-bold text-xs sm:text-sm bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 transition";
+
+                learningView.classList.remove('hidden');
+                teacherView.classList.add('hidden');
+                filterBar.classList.remove('hidden');
+                actionButtons.classList.remove('hidden');
+                studyControls.classList.add('hidden');
+                checkBtn.classList.remove('hidden');
+
+                document.getElementById('quiz-score-badge').classList.remove('hidden');
+                loadNextQuizQuestion();
+            } else if (mode === 'study') {
+                studyBtn.className = "px-3 py-1.5 rounded-xl font-bold text-xs sm:text-sm bg-teal-700 text-white shadow-sm transition";
+                quizBtn.className = "px-3 py-1.5 rounded-xl font-bold text-xs sm:text-sm bg-slate-100 text-slate-600 hover:bg-slate-200 transition";
+                teacherBtn.className = "px-3 py-1.5 rounded-xl font-bold text-xs sm:text-sm bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 transition";
+
+                learningView.classList.remove('hidden');
+                teacherView.classList.add('hidden');
+                filterBar.classList.remove('hidden');
+                actionButtons.classList.add('hidden');
+                studyControls.classList.remove('hidden');
+
+                document.getElementById('quiz-score-badge').classList.add('hidden');
+                onSelectStudyWord(0);
+            } else if (mode === 'teacher') {
+                teacherBtn.className = "px-3 py-1.5 rounded-xl font-bold text-xs sm:text-sm bg-indigo-600 text-white shadow-sm transition";
+                quizBtn.className = "px-3 py-1.5 rounded-xl font-bold text-xs sm:text-sm bg-slate-100 text-slate-600 hover:bg-slate-200 transition";
+                studyBtn.className = "px-3 py-1.5 rounded-xl font-bold text-xs sm:text-sm bg-slate-100 text-slate-600 hover:bg-slate-200 transition";
+
+                learningView.classList.add('hidden');
+                teacherView.classList.remove('hidden');
+                filterBar.classList.add('hidden');
+                actionButtons.classList.add('hidden');
+                studyControls.classList.add('hidden');
+
+                document.getElementById('quiz-score-badge').classList.add('hidden');
+                renderTeacherSyllableForms();
+                renderTeacherCustomWordsList();
+            }
+        }
+
+        function loadNextQuizQuestion() {
+            const list = getFilteredVocabulary();
+            const randomIdx = Math.floor(Math.random() * list.length);
+            currentTargetWord = list[randomIdx];
+
+            userSelections = currentTargetWord.syllables.map(() => ({
+                initial: null,
+                final: null,
+                tone: null
+            }));
+
+            activeSyllableIndex = 0;
+
+            document.getElementById('target-word-display').innerText = '?';
+            document.getElementById('quiz-feedback-box').innerHTML = '<span class="text-slate-400">스피커 🔊를 듣고 성모, 운모, 성조를 조합해 보세요.</span>';
+
+            setActiveSyllable(0);
+
+            setTimeout(() => {
+                playCurrentTargetAudio();
+            }, 300);
+        }
+
+        function onSelectStudyWord(index) {
+            const list = getFilteredVocabulary();
+            if (!list[index]) return;
+
+            currentTargetWord = list[parseInt(index)];
+
+            userSelections = currentTargetWord.syllables.map(s => ({
+                initial: s.initial,
+                final: s.final,
+                tone: s.tone
+            }));
+
+            activeSyllableIndex = 0;
+
+            document.getElementById('target-word-display').innerHTML = `
+                ${currentTargetWord.word} <span class="text-xs font-bold text-slate-500 font-sans">(${currentTargetWord.meaning})</span>
+            `;
+            document.getElementById('quiz-feedback-box').innerHTML = `<span class="text-teal-700 font-bold">💡 단어의 성모·운모·성조 버튼 위치가 자동으로 표시됩니다.</span>`;
+
+            setActiveSyllable(0);
+            playCurrentTargetAudio();
+        }
+
+        function checkQuizAnswer() {
+            let isAllCorrect = true;
+
+            for (let i = 0; i < currentTargetWord.syllables.length; i++) {
+                const targetSyl = currentTargetWord.syllables[i];
+                const userSel = userSelections[i];
+
+                if (!userSel || userSel.initial !== targetSyl.initial || userSel.final !== targetSyl.final || userSel.tone !== targetSyl.tone) {
+                    isAllCorrect = false;
+                    break;
+                }
+            }
+
+            const feedbackBox = document.getElementById('quiz-feedback-box');
+            quizTotal++;
+
+            if (isAllCorrect) {
+                quizScore++;
+                feedbackBox.innerHTML = `
+                    <span class="text-emerald-600 font-black text-sm sm:text-base animate-bounce inline-block">
+                        🎉 정답입니다! (${currentTargetWord.word} = ${currentTargetWord.syllables.map(s => s.pinyin).join(' ')})
+                    </span>
+                `;
+
+                if (window.confetti) {
+                    confetti({ particleCount: 70, spread: 60, origin: { y: 0.7 } });
+                }
+            } else {
+                const correctPinyin = currentTargetWord.syllables.map(s => s.pinyin).join(' ');
+                feedbackBox.innerHTML = `
+                    <span class="text-red-600 font-bold text-xs sm:text-sm">
+                        ❌ 아쉬워요! 정답은 <strong class="underline">${currentTargetWord.word} (${correctPinyin})</strong> 입니다.
+                    </span>
+                `;
+            }
+
+            document.getElementById('score-count').innerText = quizScore;
+            document.getElementById('total-count').innerText = quizTotal;
+        }
+
+        /* 교사 전용 단어/음성 관리 함수 */
+        function renderTeacherSyllableForms() {
+            const count = parseInt(document.getElementById('teacher-syllable-count').value);
+            const container = document.getElementById('teacher-syllables-container');
+
+            let html = '';
+            for (let i = 0; i < count; i++) {
+                html += `
+                    <div class="bg-white border border-slate-200 p-2.5 rounded-xl flex flex-wrap items-center gap-2 text-xs">
+                        <span class="font-bold text-indigo-900 w-12">${i + 1}음절:</span>
+                        
+                        <div class="flex items-center gap-1">
+                            <span class="text-slate-500 font-bold">성모</span>
+                            <select id="ts-init-${i}" class="bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 font-bold">
+                                ${INITIALS_LIST.map(init => `<option value="${init}">${init === 'ø' ? '없음(ø)' : init}</option>`).join('')}
+                            </select>
+                        </div>
+
+                        <div class="flex items-center gap-1">
+                            <span class="text-slate-500 font-bold">운모</span>
+                            <select id="ts-fin-${i}" class="bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 font-bold">
+                                ${FINALS_LIST.map(fin => `<option value="${fin}">${fin}</option>`).join('')}
+                            </select>
+                        </div>
+
+                        <div class="flex items-center gap-1">
+                            <span class="text-slate-500 font-bold">성조</span>
+                            <select id="ts-tone-${i}" class="bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 font-bold">
+                                <option value="1">1성 (ˉ)</option>
+                                <option value="2">2성 (ˊ)</option>
+                                <option value="3">3성 (ˇ)</option>
+                                <option value="4">4성 (ˋ)</option>
+                                <option value="0">경성</option>
+                            </select>
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        function saveCustomWordFromTeacher() {
+            const wordInput = document.getElementById('teacher-input-word').value.trim();
+            const meaningInput = document.getElementById('teacher-input-meaning').value.trim();
+            const count = parseInt(document.getElementById('teacher-syllable-count').value);
+            const fileInput = document.getElementById('teacher-audio-file');
+
+            if (!wordInput || !meaningInput) {
+                alert('단어(한자)와 뜻을 입력해 주세요.');
+                return;
+            }
+
+            const syllables = [];
+            for (let i = 0; i < count; i++) {
+                const init = document.getElementById(`ts-init-${i}`).value;
+                const fin = document.getElementById(`ts-fin-${i}`).value;
+                const tone = parseInt(document.getElementById(`ts-tone-${i}`).value);
+                const pinyinStr = combineToPinyin(init, fin, tone);
+                const hanziChar = wordInput[i] || wordInput;
+
+                syllables.push({
+                    initial: init,
+                    final: fin,
+                    tone: tone,
+                    pinyin: pinyinStr,
+                    hanzi: hanziChar
+                });
+            }
+
+            const processSave = (audioDataUrl = null) => {
+                const newWordObj = {
+                    word: wordInput,
+                    meaning: meaningInput,
+                    syllables: syllables,
+                    audioUrl: audioDataUrl,
+                    isCustom: true
+                };
+
+                saveCustomWordToStorage(newWordObj);
+                loadCustomWords();
+
+                document.getElementById('teacher-input-word').value = '';
+                document.getElementById('teacher-input-meaning').value = '';
+                document.getElementById('teacher-audio-file').value = '';
+
+                renderTeacherCustomWordsList();
+                updateStudyPresetDropdown();
+
+                alert(`'${wordInput}' 단어가 성공적으로 등록되었습니다!`);
+            };
+
+            if (fileInput.files && fileInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    processSave(e.target.result);
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+            } else {
+                processSave(null);
+            }
+        }
+
+        function saveCustomWordToStorage(wordObj) {
+            const storedCustoms = JSON.parse(localStorage.getItem('chinese_custom_words') || '[]');
+            storedCustoms.push(wordObj);
+            try {
+                localStorage.setItem('chinese_custom_words', JSON.stringify(storedCustoms));
+            } catch(e) {
+                alert('용량이 커서 저장되지 않을 수 있습니다.');
+            }
+        }
+
+        function loadCustomWords() {
+            const storedCustoms = JSON.parse(localStorage.getItem('chinese_custom_words') || '[]');
+            VOCABULARY_DB = [...BASE_VOCABULARY_DB, ...storedCustoms];
+        }
+
+        function deleteCustomWord(index) {
+            let storedCustoms = JSON.parse(localStorage.getItem('chinese_custom_words') || '[]');
+            storedCustoms.splice(index, 1);
+            localStorage.setItem('chinese_custom_words', JSON.stringify(storedCustoms));
+
+            loadCustomWords();
+            renderTeacherCustomWordsList();
+            updateStudyPresetDropdown();
+        }
+
+        function clearAllCustomWords() {
+            if (confirm('교사가 직접 등록한 모든 단어를 삭제하시겠습니까?')) {
+                localStorage.removeItem('chinese_custom_words');
+                loadCustomWords();
+                renderTeacherCustomWordsList();
+                updateStudyPresetDropdown();
+            }
+        }
+
+        function renderTeacherCustomWordsList() {
+            const storedCustoms = JSON.parse(localStorage.getItem('chinese_custom_words') || '[]');
+            const listContainer = document.getElementById('custom-words-list');
+            document.getElementById('custom-words-count').innerText = storedCustoms.length;
+
+            if (storedCustoms.length === 0) {
+                listContainer.innerHTML = `<div class="text-xs text-slate-400 py-3 text-center">등록된 단어가 없습니다. 위 박스에서 새 단어를 등록해 보세요!</div>`;
+                return;
+            }
+
+            listContainer.innerHTML = storedCustoms.map((item, idx) => `
+                <div class="bg-white border border-slate-200 px-3 py-2 rounded-xl flex items-center justify-between text-xs">
+                    <div class="flex items-center gap-2">
+                        <span class="font-extrabold text-slate-800 text-sm">${item.word}</span>
+                        <span class="text-teal-700 font-bold">(${item.syllables.map(s => s.pinyin).join(' ')})</span>
+                        <span class="text-slate-500 font-medium">${item.meaning}</span>
+                        ${item.audioUrl ? '<span class="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded text-[10px] font-bold">🎙️ 음성파일</span>' : '<span class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[10px]">🗣️ TTS</span>'}
+                    </div>
+                    <button onclick="deleteCustomWord(${idx})" class="text-red-500 hover:text-red-700 font-bold text-xs bg-red-50 hover:bg-red-100 px-2 py-1 rounded-lg">
+                        삭제
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        window.onload = function() {
+            loadCustomWords();
+            renderAllButtons();
+            loadTTSVoices();
+            switchMode('quiz');
+        };
+    </script>
+</body>
+</html>
